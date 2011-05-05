@@ -1,6 +1,6 @@
 {
    "engines" : {
-      "node" : "0.4.7"
+      "node" : ">=0.4.7"
    },
    "repository" : {
       "url" : "git://github.com/frodwith/node-init.git",
