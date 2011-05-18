@@ -71,15 +71,17 @@ exports.stopped = (killed) ->
 exports.stop = (pidfile, cb = exports.stopped) ->
     exports.status pidfile, ({pid}) ->
         if pid
-            n = 0
-            do ->
-                signal = if n > 3 then 'SIGKILL' else 'SIGTERM'
+            signals = ['TERM', 'INT', 'QUIT', 'KILL']
+            tryKill = ->
+                sig = "SIG#{ signals[0] }"
                 try
-                    process.kill pid
-                    n += 1
-                    setTimeout arguments.callee, 1000
+                    # throws when the process no longer exists
+                    process.kill pid, sig
+                    signals.shift() if signals.length > 1
+                    setTimeout (-> tryKill sig), 2000
                 catch e
-                    fs.unlink pidfile, -> cb(n > 0)
+                    fs.unlink pidfile, -> cb(signals.length < 4)
+            tryKill()
         else
             cb false
 

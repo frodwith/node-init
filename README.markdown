@@ -59,8 +59,9 @@ some sort of stringifiable error object. Defaults to init.startFailed.
 
 ### init.stop(pidfile, cb)
 
-Stop your service. cb will be called after the process is killed, and defaults
-to init.stopped. If the process was running, cb's first argument will be true.
+Sends your service TERM, INT, QUIT, in that order (with 2 second delays) and
+then KILL until the process is no longer running, then calls cb (defaults to
+init.stopped). If the process was running, cb's first argument will be true.
 
 ### init.status(pidfile, cb)
 
