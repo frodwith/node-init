@@ -68,32 +68,52 @@ exports.stopped = (killed) ->
         console.log 'Not running.'
     process.exit 0
 
-exports.stop = (pidfile, cb = exports.stopped) ->
+exports.hardKiller = (timeout = 2000) ->
+    (pid, cb) ->
+        signals = ['TERM', 'INT', 'QUIT', 'KILL']
+        tryKill = ->
+            sig = "SIG#{ signals[0] }"
+            try
+                # throws when the process no longer exists
+                process.kill pid, sig
+                signals.shift() if signals.length > 1
+                setTimeout (-> tryKill sig), timeout
+            catch e
+                cb(signals.length < 4)
+        tryKill()
+
+exports.softKiller = (timeout = 2000) ->
+    (pid, cb) ->
+        first = true
+        tryKill = ->
+            try
+                # throws when the process no longer exists
+                process.kill pid, "SIGTERM"
+                console.log "Waiting for pid " + pid
+                first = false
+                setTimeout tryKill, timeout
+            catch e
+                cb(!first)
+        tryKill()
+
+exports.stop = (pidfile, cb = exports.stopped, killer = hardKiller) ->
     exports.status pidfile, ({pid}) ->
         if pid
-            signals = ['TERM', 'INT', 'QUIT', 'KILL']
-            tryKill = ->
-                sig = "SIG#{ signals[0] }"
-                try
-                    # throws when the process no longer exists
-                    process.kill pid, sig
-                    signals.shift() if signals.length > 1
-                    setTimeout (-> tryKill sig), 2000
-                catch e
-                    fs.unlink pidfile, -> cb(signals.length < 4)
-            tryKill()
+            killer pid, (killed) ->
+                fs.unlink pidfile, -> cb(killed)
         else
             cb false
 
-exports.simple = ({pidfile, logfile, command, run}) ->
+exports.simple = ({pidfile, logfile, command, run, killer}) ->
     command or= process.argv[2]
+    killer or= null
     start = -> exports.start { pidfile, logfile, run }
     switch command
         when 'start'  then start()
-        when 'stop'   then exports.stop pidfile
+        when 'stop'   then exports.stop pidfile, null, killer
         when 'status' then exports.status pidfile
         when 'restart', 'force-reload'
-            exports.stop pidfile, start
+            exports.stop pidfile, start, killer
         when 'try-restart'
             exports.stop pidfile, (killed) ->
                 if killed
