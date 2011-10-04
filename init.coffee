@@ -84,16 +84,17 @@ exports.hardKiller = (timeout = 2000) ->
 
 exports.softKiller = (timeout = 2000) ->
     (pid, cb) ->
-        first = true
+        sig = "SIGTERM"
         tryKill = ->
             try
                 # throws when the process no longer exists
-                process.kill pid, "SIGTERM"
+                process.kill pid, sig
                 console.log "Waiting for pid " + pid
+                sig = 0 if sig != 0
                 first = false
                 setTimeout tryKill, timeout
             catch e
-                cb(!first)
+                cb(sig == 0)
         tryKill()
 
 exports.stop = (pidfile, cb = exports.stopped, killer = hardKiller) ->
