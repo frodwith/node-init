@@ -57,11 +57,15 @@ about to daemonize). 'pid' will be the id of the running process, and
 A function to be called if the start action cannot be performed. Error will be
 some sort of stringifiable error object. Defaults to init.startFailed.
 
-### init.stop(pidfile, cb)
+### init.stop(pidfile, cb, killer)
 
-Sends your service TERM, INT, QUIT, in that order (with 2 second delays) and
-then KILL until the process is no longer running, then calls cb (defaults to
-init.stopped). If the process was running, cb's first argument will be true.
+If you omit `killer`, it sends your service TERM, INT, QUIT, in that order
+(with 2 second delays) and then KILL until the process is no longer running,
+then calls cb (defaults to init.stopped). If the process was running,
+cb's first argument will be true. It is identical to pass `init.hardKiller(2000)`
+as killer argument. If you want to send SIGTERM signals to your process and
+wait until it die, use `init.softKiller(delay = 2000)` to check for your pid
+every `delay` seconds while it's alive. Then `cb` will be called.
 
 ### init.status(pidfile, cb)
 
@@ -79,6 +83,9 @@ following keyword arguments:
 #### run
 #### logfile
 As in init.start()
+
+### killer
+As in init.stop()
 
 #### command
 A string on which to dispatch. Defaults to your program's first argument
