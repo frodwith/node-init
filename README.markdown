@@ -102,7 +102,7 @@ This is the default shutdown function.
 
 ### init.softKiller(delay = 2000)
 
-Sends your service TERM and wait until it dies with 2000 ms delays. If it is
+Sends your service TERM and waits until it dies with 2000 ms delays. If it is
 more important that your service shutdown gracefully (to preserve data
 integrity, etc) than that it exits promptly, this is a good choice.
 
