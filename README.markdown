@@ -98,13 +98,13 @@ Shutdown functions
 Sends your service TERM, INT, QUIT, in that order (with 2000 ms delays) and
 then KILL until the process is no longer running, then calls cb (defaults to
 init.stopped). If the process was running, cb's first argument will be true.
-This is default shutdown function.
+This is the default shutdown function.
 
 ### init.softKiller(delay = 2000)
 
-Sends your service TERM and wait until it die with 2000 ms delays. This is
-preferred choice for graceful shutdown. Your service may decide when it want
-to stop with no data loss.
+Sends your service TERM and wait until it dies with 2000 ms delays. If it is
+more important that your service shutdown gracefully (to preserve data
+integrity, etc) than that it exits promptly, this is a good choice.
 
 
 Default Actions
