@@ -57,11 +57,10 @@ about to daemonize). 'pid' will be the id of the running process, and
 A function to be called if the start action cannot be performed. Error will be
 some sort of stringifiable error object. Defaults to init.startFailed.
 
-### init.stop(pidfile, cb)
+### init.stop(pidfile, cb, killer)
 
-Sends your service TERM, INT, QUIT, in that order (with 2 second delays) and
-then KILL until the process is no longer running, then calls cb (defaults to
-init.stopped). If the process was running, cb's first argument will be true.
+Stops your service with one of shutdown functions. Default is
+`init.hardKiller(2000)`, but you may pass your own.
 
 ### init.status(pidfile, cb)
 
@@ -80,10 +79,33 @@ following keyword arguments:
 #### logfile
 As in init.start()
 
+### killer
+As in init.stop()
+
 #### command
 A string on which to dispatch. Defaults to your program's first argument
 (process.argv[2]). Recognized actions are "start", "stop", "restart",
 "try-restart", "force-reload", and "status".
+
+#### killer
+As in init.stop()
+
+Shutdown functions
+-----------------
+
+### init.hardKiller(delay = 2000)
+
+Sends your service TERM, INT, QUIT, in that order (with 2000 ms delays) and
+then KILL until the process is no longer running, then calls cb (defaults to
+init.stopped). If the process was running, cb's first argument will be true.
+This is default shutdown function.
+
+### init.softKiller(delay = 2000)
+
+Sends your service TERM and wait until it die with 2000 ms delays. This is
+preferred choice for graceful shutdown. Your service may decide when it want
+to stop with no data loss.
+
 
 Default Actions
 ---------------
