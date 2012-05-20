@@ -49,7 +49,7 @@ exports.start = ({ pidfile, logfile, run, success, failure }) ->
         fs.open logfile, 'a+', 0666, (err, fd) ->
             return failure(err) if err
             success()
-            pid = daemon.start(fd)
+            pid = daemon.start(logfile)
             daemon.lock(pidfile)
             run()
 
