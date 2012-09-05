@@ -27,20 +27,20 @@ exports.status = (pidfile, cb = exports.printStatus) ->
         else
             cb exists: true
 
-exports.statusSync = (pidfile, cb = exports.printStatus) ->
+exports.statusSync = (pidfile) ->
     try
         data = fs.readFileSync pidfile, 'utf8'
         if match = /^\d+/.exec(data)
             pid = parseInt match[0]
             try
                 process.kill pid, 0
-                cb pid: pid
+                return pid: pid
             catch e
-                cb exists: true
+                return exists: true
         else
-            cb exists: true
+            return exists: true
     catch err
-        cb exists: err.code isnt 'ENOENT'
+        return exists: err.code isnt 'ENOENT'
 
 exports.startSucceeded = (pid) ->
     if pid
@@ -85,13 +85,12 @@ exports.startSync = ({ pidfile, logfile, runSync, success, failure }) ->
         daemon.lock(pidfile)
         runSync()
 
-    exports.statusSync pidfile, (st) ->
-        if st.pid
-            success st.pid, true
-            return
-        else if st.exists
-            fs.unlinkSync pidfile
+    st = exports.statusSync pidfile
+    unless st.pid
+        fs.unlinkSync(pidfile) if st.exists
         start()
+    else
+        success st.pid, true
 
 exports.stopped = (killed) ->
     if killed
