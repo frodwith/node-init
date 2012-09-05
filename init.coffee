@@ -27,6 +27,21 @@ exports.status = (pidfile, cb = exports.printStatus) ->
         else
             cb exists: true
 
+exports.statusSync = (pidfile) ->
+    try
+        data = fs.readFileSync pidfile, 'utf8'
+        if match = /^\d+/.exec(data)
+            pid = parseInt match[0]
+            try
+                process.kill pid, 0
+                return pid: pid
+            catch e
+                return exists: true
+        else
+            return exists: true
+    catch err
+        return exists: err.code isnt 'ENOENT'
+
 exports.startSucceeded = (pid) ->
     if pid
         console.log 'Process already running with pid %d.', pid
@@ -46,12 +61,10 @@ exports.start = ({ pidfile, logfile, run, success, failure }) ->
 
     start = (err) ->
         return failure(err) if err
-        fs.open logfile, 'a+', 0666, (err, fd) ->
-            return failure(err) if err
-            success()
-            pid = daemon.start(fd)
-            daemon.lock(pidfile)
-            run()
+        success()
+        pid = daemon.start(logfile)
+        daemon.lock(pidfile)
+        run()
 
     exports.status pidfile, (st) ->
         if st.pid
@@ -60,6 +73,24 @@ exports.start = ({ pidfile, logfile, run, success, failure }) ->
             fs.unlink pidfile, start
         else
             start()
+
+exports.startSync = ({ pidfile, logfile, runSync, success, failure }) ->
+    success or= exports.startSucceeded
+    failure or= exports.startFailed
+    logfile or= '/dev/null'
+
+    start = ->
+        success()
+        pid = daemon.start(logfile)
+        daemon.lock(pidfile)
+        runSync()
+
+    st = exports.statusSync pidfile
+    unless st.pid
+        fs.unlinkSync(pidfile) if st.exists
+        start()
+    else
+        success st.pid, true
 
 exports.stopped = (killed) ->
     if killed
@@ -105,10 +136,15 @@ exports.stop = (pidfile, cb = exports.stopped, killer = exports.hardKiller(2000)
         else
             cb false
 
-exports.simple = ({pidfile, logfile, command, run, killer}) ->
+exports.simple = ({pidfile, logfile, command, run, runSync, killer}) ->
     command or= process.argv[2]
     killer or= null
-    start = -> exports.start { pidfile, logfile, run }
+    start = -> 
+        if run?
+            exports.start { pidfile, logfile, run }
+        else if runSync?
+            exports.startSync { pidfile, logfile, runSync }
+
     switch command
         when 'start'  then start()
         when 'stop'   then exports.stop pidfile, null, killer
